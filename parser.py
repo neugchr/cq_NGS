@@ -5,7 +5,7 @@ parser = argparse.ArgumentParser(
 )
 
 # # positional argument mandatory
-parser.add_argument("infile", type=argparse.FileType("r"), help=("input fasta file"))
+parser.add_argument("infile", type=argparse.FileType("r"), help=("turns multi-fasta files into single sequence fastas, the sequence is in one line"))
 args = parser.parse_args()
 
 
@@ -43,8 +43,9 @@ with args.infile as file:
     seqs = parse_file(file)
 
 
-with open('results.txt', 'w+') as fh:
-    for i in range(len(seqs)-1,-1,-1):
-        print(str(seqs[i]))
-        fh.write(str(seqs[i]))
-        seqs.pop(i)
+for seq in seqs:
+    fname = seq.description[1:15].replace(" ", "_")
+    with open(f"{fname}.fasta", "w+") as fh:
+        outstring = seq.description.replace("\n", "")
+        outstring += '\n'+seq.sequence.replace("\n", "")
+        fh.write(outstring)
