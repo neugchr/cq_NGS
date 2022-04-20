@@ -12,8 +12,8 @@ args = parser.parse_args()
 
 class Sequence:
     def __init__(self, description, sequence):
-        self.description = description
-        self.sequence = sequence
+        self.description = description.strip()
+        self.sequence = sequence.strip()
 
     def __str__(self):
         ostr = f"\n--------------------------\n{self.description}\n{self.sequence}\n"
@@ -45,7 +45,8 @@ with args.infile as file:
 
 for seq in seqs:
     fname = seq.description[1:15].replace(" ", "_")
+    print(fname)
     with open(f"{fname}.fasta", "w+") as fh:
         outstring = seq.description.replace("\n", "")
-        outstring += '\n'+seq.sequence.replace("\n", "")
+        outstring += '\n'+seq.sequence.replace("\n", "")+'\n'
         fh.write(outstring)
