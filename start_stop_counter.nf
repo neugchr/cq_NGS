@@ -16,10 +16,10 @@ process count_codon{
   input:
     tuple path(sequence), val(codon)
   output:
-    path "${codon}.count"
+    path "${sequence}_${codon}.count"
   script:
     """
-    grep -oi ${codon} ${sequence} | wc -l > ${codon}.count
+    grep -oi ${codon} ${sequence} | wc -l > ${sequence}_${codon}.count
     """
 }
 
