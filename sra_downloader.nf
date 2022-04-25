@@ -42,8 +42,29 @@ process fastqc {
     """
 }
 
+process fastp {
+  storeDir "${params.outdir}"
+  container "https://depot.galaxyproject.org/singularity/fastp%3A0.23.2--hb7a2d85_2"
+  input:
+    path fastas
+  output:
+  path "*_trimmed.fastq"
+  script:
+    if (fastas instanceof List){
+      """
+      fastp -i ${fastas[0]} -I ${fastas[1]} -o ${fastas[0].getSimpleName()}_trimmed.fastq -O ${fastas[1].getSimpleName()}_trimmed.fastq
+      """
+    }
+    else {
+      """
+      fastp -i ${fastas} -o ${fastas.getSimpleName()}_trimmed.fastq
+      """
+    }
+}
+
 workflow {
   sraresult = prefetch(params.accession)
-  dumpedfastas = dumpprocess(sraresult)
-  fastqc(dumpedfastas)
+  dumpedfastas =  dumpprocess(sraresult)
+  fastpoutfastas = fastp(dumpedfastas)
+  fastqc(dumpedfastas.combine(fastpoutfastas))
 }
