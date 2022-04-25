@@ -16,7 +16,7 @@ process prefetch {
 }
 
 process dumpprocess {
-  storeDir "${params.outdir}"
+  storeDir "${params.outdir}/raws/"
   container "https://depot.galaxyproject.org/singularity/sra-tools:2.11.0--pl5262h314213e_0"
   input:
     path sraresult
@@ -35,7 +35,8 @@ process fastqc {
   input:
     path fastas
   output:
-    path "*_fastqc.*"
+    path "*_fastqc.html", emit: fastqc_html_report
+    path "*_fastqc.zip", emit: fastqc_zip_report
   script:
     """
     fastqc ${fastas}
@@ -43,28 +44,44 @@ process fastqc {
 }
 
 process fastp {
-  storeDir "${params.outdir}"
+  storeDir "${params.outdir}/trimmed"
   container "https://depot.galaxyproject.org/singularity/fastp%3A0.23.2--hb7a2d85_2"
   input:
     path fastas
   output:
-  path "*_trimmed.fastq"
+    path "*_snipped.fastq", emit: trimmed_fastq
+    path "*.html", emit: fastp_html_report
+    path "*.json", emit: fastp_json_report
   script:
     if (fastas instanceof List){
       """
-      fastp -i ${fastas[0]} -I ${fastas[1]} -o ${fastas[0].getSimpleName()}_trimmed.fastq -O ${fastas[1].getSimpleName()}_trimmed.fastq
+      fastp -i ${fastas[0]} -I ${fastas[1]} -o ${fastas[0].getSimpleName()}_snipped.fastq -O ${fastas[1].getSimpleName()}_snipped.fastq -h ${fastas[0].getSimpleName()}_fastp.html -j ${fastas[0].getSimpleName()}_fastp.json
       """
     }
     else {
       """
-      fastp -i ${fastas} -o ${fastas.getSimpleName()}_trimmed.fastq
+      fastp -i ${fastas} -o ${fastas.getSimpleName()}_snipped.fastq -h ${fastas[0].getSimpleName()}_fastp.html -j ${fastas[0].getSimpleName()}_fastp.json
       """
     }
+}
+
+process multiqc {
+  storeDir "${params.outdir}/multiqc"
+  container "https://depot.galaxyproject.org/singularity/multiqc:1.9--py_1"
+  input:
+    path inreps
+  output:
+    path "*"
+  script:
+    """
+    multiqc .
+    """
 }
 
 workflow {
   sraresult = prefetch(params.accession)
   dumpedfastas =  dumpprocess(sraresult)
-  fastpoutfastas = fastp(dumpedfastas)
-  fastqc(dumpedfastas.combine(fastpoutfastas))
+  fastp_out = fastp(dumpedfastas)
+  fastqc_out = fastqc(dumpedfastas.combine(fastp_out.trimmed_fastq))
+  multiqc( fastp_out.fastp_json_report.concat(fastqc_out.fastqc_zip_report).collect() )
 }
