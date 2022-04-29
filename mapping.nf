@@ -2,10 +2,11 @@ nextflow.enable.dsl = 2
 
 params.outdir = "results"
 params.large_index = false
-params.reference = "/home/cq/Documents/Module_3_NGS/cq_NGS/ON074439"
+params.reference = null
 
-// bowtie 2 indexing fasta file ON074439
-// bowtie 2 mapping reads onto index
+if (!params.reference) {
+    error "ERROR: Please specify reference genome"
+}
 
 process bowtie2_index {
   publishDir "${params.outdir}", mode: "copy", overwrite: true
@@ -13,15 +14,33 @@ process bowtie2_index {
   input:
     path ref
   output:
-    path "*"
+    path "*", emit: indices
   script:
     """
-    bowtie2-build ${ref} index
+    bowtie2-build ${ref} ${ref.getBaseName()}_index
     """
 }
 
+process bowtie_map {
+  publishDir "${params.outdir}", mode: "copy", overwrite: true
+  container "https://depot.galaxyproject.org/singularity/bowtie2%3A2.4.5--py39hd2f7db1_2"
+  input:
+//    path ref
+    path sample
+    path indices
+  output:
+    path "*"
+  script:
+  """
+  bowtie2 -x ${indices[0].getSimpleName()} -U ${sample} -S ${indices[0].getSimpleName()}.sam
+  """
+}
+
 workflow {
-//  fastqchannel = channel.fromPath("${params.indir}/*.fastq").collect()
-  refchannel = channel.fromPath("${params.reference}/*.fasta")
-  bowtie2_index(refchannel)
+//  refchannel = channel.fromPath("${params.reference}/*.fasta")
+  refchannel = channel.fromPath("${params.reference}")
+  samplechannel = channel.fromPath("${params.sample}/*.fastq")
+  bowtie = bowtie2_index(refchannel)
+  bowtie_map(samplechannel, bowtie.indices)
+
 }
