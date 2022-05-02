@@ -51,7 +51,7 @@ process srst2 {
 }
 
 process aggregate {
-  storeDir "${params.outdir}/aggregate_report"
+  publishDir "${params.outdir}/aggregate_report", mode: "copy", overwrite: true
   container "https://depot.galaxyproject.org/singularity/srst2%3A0.2.0--py27_2"
   input:
     path genes
