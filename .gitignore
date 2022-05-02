@@ -2,8 +2,6 @@
 .nextflow*
 work/
 work/*
-results/
-results/*
 *fastq
 LEK/rawdata.tar.gz
 LEK/CARD*
