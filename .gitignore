@@ -1,1 +1,11 @@
+.git
+.nextflow*
+work/
 work/*
+results/
+results/*
+*fastq
+LEK/rawdata.tar.gz
+LEK/CARD*
+LEK/results/srst/*.pileup
+LEK/results/srst/*.bam
